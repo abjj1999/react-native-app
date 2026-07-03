@@ -62,17 +62,17 @@ const SubscriptionCard = ({
                   {paymentMethod?.trim()}
                 </Text>
               </View>
-              <View className="sub-row">
-                <View className="sub-row-copy">
-                  <Text className="sub-label">Category:</Text>
-                  <Text
-                    className="sub-value"
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {category?.trim() || plan?.trim()}
-                  </Text>
-                </View>
+            </View>
+            <View className="sub-row">
+              <View className="sub-row-copy">
+                <Text className="sub-label">Category:</Text>
+                <Text
+                  className="sub-value"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {category?.trim() || plan?.trim()}
+                </Text>
               </View>
             </View>
             <View className="sub-row">
