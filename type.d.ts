@@ -51,6 +51,33 @@ declare global {
     interface ListHeadingProps {
         title: string;
     }
+
+    interface AuthTextFieldProps {
+        label: string;
+        value: string;
+        onChangeText: (value: string) => void;
+        error?: string | null;
+        placeholder?: string;
+        secureTextEntry?: boolean;
+        keyboardType?: import("react-native").KeyboardTypeOptions;
+        autoCapitalize?: "none" | "sentences" | "words" | "characters";
+        autoComplete?: import("react-native").TextInputProps["autoComplete"];
+        textContentType?: import("react-native").TextInputProps["textContentType"];
+        editable?: boolean;
+    }
+
+    interface AuthButtonProps {
+        title: string;
+        onPress: () => void;
+        disabled?: boolean;
+        loading?: boolean;
+        variant?: "primary" | "secondary";
+    }
+
+    interface AuthBrandHeaderProps {
+        title: string;
+        subtitle: string;
+    }
 }
 
 export {};
