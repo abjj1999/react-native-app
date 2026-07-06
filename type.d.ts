@@ -15,6 +15,8 @@ declare global {
     interface Subscription {
         id: string;
         icon: ImageSourcePropType;
+        /** FontAwesome6 brand glyph name; takes precedence over `icon` when set. */
+        brandIcon?: string;
         name: string;
         plan?: string;
         category?: string;
@@ -77,6 +79,14 @@ declare global {
     interface AuthBrandHeaderProps {
         title: string;
         subtitle: string;
+    }
+
+    type SubscriptionFrequency = "Monthly" | "Yearly";
+
+    interface CreateSubscriptionModalProps {
+        visible: boolean;
+        onClose: () => void;
+        onCreate: (subscription: Subscription) => void;
     }
 }
 

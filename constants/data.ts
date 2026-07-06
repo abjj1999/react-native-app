@@ -11,6 +11,16 @@ export const HOME_USER = {
   name: "Abdullah Al Hilfi",
 };
 
+export const SUBSCRIPTION_CATEGORIES = [
+  "Design",
+  "Developer Tools",
+  "AI Tools",
+  "Entertainment",
+  "Music",
+  "Productivity",
+  "Other",
+] as const;
+
 export const HOME_BALANCE = {
   amount: 2489.48,
   nextRenewalDate: "2026-07-03T09:00:00.000Z",

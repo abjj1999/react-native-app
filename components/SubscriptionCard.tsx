@@ -1,8 +1,10 @@
+import { colors } from "@/constants/theme";
 import {
   formatCurrency,
   formatStatusLabel,
   formatSubscriptionDateTime,
 } from "@/lib/utils";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import clsx from "clsx";
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
@@ -12,6 +14,7 @@ const SubscriptionCard = ({
   price,
   currency,
   icon,
+  brandIcon,
   billing,
   color,
   category,
@@ -31,7 +34,13 @@ const SubscriptionCard = ({
     >
       <View className="sub-head">
         <View className="sub-main">
-          <Image className="sub-icon" source={icon} />
+          {brandIcon ? (
+            <View className="sub-icon items-center justify-center bg-muted">
+              <FontAwesome6 name={brandIcon} size={30} color={colors.primary} />
+            </View>
+          ) : (
+            <Image className="sub-icon" source={icon} />
+          )}
           <View className="sub-copy">
             <Text className="sub-title" numberOfLines={1}>
               {name}
