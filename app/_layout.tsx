@@ -8,6 +8,10 @@ import { useEffect } from "react";
 
 SplashScreen.preventAutoHideAsync();
 
+const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY!;
+const posthogHost =
+  process.env.EXPO_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 if (!publishableKey) {
@@ -36,9 +40,9 @@ export default function RootLayout() {
 
   return (
     <PostHogProvider
-      apiKey="phc_BJFJ6k6ze5RSsRktAFNLXtD67iaTiQHWKsrBScyzcXHh"
+      apiKey={posthogApiKey}
       options={{
-        host: "https://us.i.posthog.com",
+        host: posthogHost,
       }}
     >
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
