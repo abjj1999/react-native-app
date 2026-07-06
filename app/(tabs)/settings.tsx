@@ -5,6 +5,7 @@ import {styled} from "nativewind";
 import {useClerk, useUser} from "@clerk/expo";
 import images from "@/constants/images";
 import dayjs from "dayjs";
+import {usePostHog} from "posthog-react-native";
 
 const SafeAreaView = styled(RNSaveAreaView);
 
@@ -14,6 +15,13 @@ const formatDate = (value?: Date | null) =>
 const Settings = () => {
     const {signOut} = useClerk();
     const {user} = useUser();
+    const posthog = usePostHog();
+
+    const handleSignOut = async () => {
+        posthog.capture("signed_out");
+        posthog.reset();
+        await signOut();
+    };
 
     const primaryEmail = user?.primaryEmailAddress;
     const displayName = user?.fullName ?? user?.username ?? "Budget user";
@@ -74,7 +82,7 @@ const Settings = () => {
                     </View>
                 </View>
 
-                <Pressable className="sub-cancel mt-6" onPress={() => signOut()}>
+                <Pressable className="sub-cancel mt-6" onPress={handleSignOut}>
                     <Text className="sub-cancel-text">Sign out</Text>
                 </Pressable>
             </ScrollView>

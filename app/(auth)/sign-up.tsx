@@ -6,6 +6,7 @@ import { getCodeError, getEmailError, getPasswordError } from "@/lib/validation"
 import { useAuth, useSignUp } from "@clerk/expo";
 import { Link, useRouter } from "expo-router";
 import { styled } from "nativewind";
+import { usePostHog } from "posthog-react-native";
 import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -25,6 +26,7 @@ const SignUp = () => {
   const { signUp, errors, fetchStatus } = useSignUp();
   const { isSignedIn } = useAuth();
   const router = useRouter();
+  const posthog = usePostHog();
 
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
@@ -55,11 +57,16 @@ const SignUp = () => {
     setClientErrors(nextErrors);
     if (nextErrors.emailAddress || nextErrors.password) return;
 
+    posthog.capture("sign_up_started");
+
     const { error } = await signUp.password({
       emailAddress: emailAddress.trim(),
       password,
     });
-    if (error) return;
+    if (error) {
+      posthog.capture("sign_up_failed", { error_code: error.code });
+      return;
+    }
 
     const { error: sendError } = await signUp.verifications.sendEmailCode();
     if (!sendError) setResendCooldown(RESEND_COOLDOWN_SECONDS);
@@ -73,8 +80,15 @@ const SignUp = () => {
     await signUp.verifications.verifyEmailCode({ code: code.trim() });
 
     if (signUp.status === "complete") {
+      posthog.capture("sign_up_email_verified");
       await signUp.finalize({
         navigate: ({ session }) => {
+          const sessionUser = session?.user;
+          if (sessionUser) {
+            const email = sessionUser.primaryEmailAddress?.emailAddress;
+            posthog.identify(sessionUser.id, email ? { email } : undefined);
+          }
+          posthog.capture("sign_up_completed");
           // Session tasks (e.g. org selection) are not used by this app yet.
           if (session?.currentTask) return;
           router.replace("/");
@@ -87,7 +101,10 @@ const SignUp = () => {
     setCode("");
     setClientErrors({});
     const { error } = await signUp.verifications.sendEmailCode();
-    if (!error) setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    if (!error) {
+      posthog.capture("verification_code_resent", { flow: "sign_up" });
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    }
   };
 
   // The (auth) layout redirects as soon as the session becomes active.

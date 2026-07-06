@@ -6,6 +6,7 @@ import { getCodeError, getEmailError, getPasswordError } from "@/lib/validation"
 import { useSignIn } from "@clerk/expo";
 import { Link, useRouter } from "expo-router";
 import { styled } from "nativewind";
+import { usePostHog } from "posthog-react-native";
 import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -24,6 +25,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 const SignIn = () => {
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
+  const posthog = usePostHog();
 
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
@@ -49,9 +51,17 @@ const SignIn = () => {
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
-  const finalizeSignIn = async () => {
+  const finalizeSignIn = async (
+    method: "password" | "mfa_email_code" | "password_reset",
+  ) => {
     await signIn.finalize({
       navigate: ({ session }) => {
+        const sessionUser = session?.user;
+        if (sessionUser) {
+          const email = sessionUser.primaryEmailAddress?.emailAddress;
+          posthog.identify(sessionUser.id, email ? { email } : undefined);
+        }
+        posthog.capture("sign_in_completed", { method });
         // Session tasks (e.g. org selection) are not used by this app yet.
         if (session?.currentTask) return;
         router.replace("/");
@@ -71,10 +81,13 @@ const SignIn = () => {
       emailAddress: emailAddress.trim(),
       password,
     });
-    if (error) return;
+    if (error) {
+      posthog.capture("sign_in_failed", { error_code: error.code });
+      return;
+    }
 
     if (signIn.status === "complete") {
-      await finalizeSignIn();
+      await finalizeSignIn("password");
     } else if (signIn.status === "needs_client_trust") {
       const emailCodeFactor = signIn.supportedSecondFactors.find(
         (factor) => factor.strategy === "email_code",
@@ -95,7 +108,7 @@ const SignIn = () => {
     if (error) return;
 
     if (signIn.status === "complete") {
-      await finalizeSignIn();
+      await finalizeSignIn("mfa_email_code");
     }
   };
 
@@ -112,6 +125,7 @@ const SignIn = () => {
     const { error: sendError } = await signIn.resetPasswordEmailCode.sendCode();
     if (sendError) return;
 
+    posthog.capture("password_reset_started");
     setCode("");
     setIsResetFlow(true);
     setResendCooldown(RESEND_COOLDOWN_SECONDS);
@@ -137,7 +151,8 @@ const SignIn = () => {
     if (error) return;
 
     if (signIn.status === "complete") {
-      await finalizeSignIn();
+      posthog.capture("password_reset_completed");
+      await finalizeSignIn("password_reset");
     }
   };
 
@@ -145,7 +160,10 @@ const SignIn = () => {
     setCode("");
     setClientErrors({});
     const { error } = await signIn.resetPasswordEmailCode.sendCode();
-    if (!error) setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    if (!error) {
+      posthog.capture("verification_code_resent", { flow: "password_reset" });
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    }
   };
 
   const handleStartOver = async () => {
@@ -196,7 +214,12 @@ const SignIn = () => {
                 onPress={async () => {
                   setCode("");
                   const { error } = await signIn.mfa.sendEmailCode();
-                  if (!error) setResendCooldown(RESEND_COOLDOWN_SECONDS);
+                  if (!error) {
+                    posthog.capture("verification_code_resent", {
+                      flow: "sign_in_mfa",
+                    });
+                    setResendCooldown(RESEND_COOLDOWN_SECONDS);
+                  }
                 }}
                 disabled={resendCooldown > 0 || isSubmitting}
                 variant="secondary"
